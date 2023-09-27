@@ -1,10 +1,10 @@
 import threading
-import time
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
+
 import SocketsDB
 from SocketsDB import ConnectionModel
-from sqlalchemy.exc import IntegrityError
 
 Session = sessionmaker(bind=SocketsDB.engine)
 session = Session()
@@ -18,8 +18,6 @@ class ConnectionRepository:
     def add(topic, host, port):
         with session_lock:
             try:
-                print("Before sleep in add()")
-                time.sleep(5)
                 connection = ConnectionModel(topic, host, port)
                 session.add(connection)
                 session.commit()
@@ -30,7 +28,24 @@ class ConnectionRepository:
     @staticmethod
     def get_by_topic(topic):
         with session_lock:
-            print("Before sleep in get_by_topic()")
-            time.sleep(5)
             connections = session.query(ConnectionModel).filter(ConnectionModel.topic == topic)
             return connections
+
+    @staticmethod
+    def delete_by_host_port(address):
+        host, port = address
+        with session_lock:
+            try:
+                connection_to_delete = session.query(ConnectionModel).filter(
+                    ConnectionModel.host == host, ConnectionModel.port == port
+                ).one_or_none()
+
+                if connection_to_delete:
+                    session.delete(connection_to_delete)
+                    session.commit()
+                else:
+                    print(f"No connection found with host {host} and port {port}. Nothing deleted.")
+
+            except IntegrityError as e:
+                print(f"Failed to delete connection: {e.statement}")
+                session.rollback()

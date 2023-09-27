@@ -16,5 +16,5 @@ if publisher_socket.is_connected:
         content = input("Enter content: ")
         payload_data = PayloadModel.as_dict(PayloadRepository.CONTENT, topic, content)
 
-        publisher_socket.send(json.dumps(payload_data).encode('utf-8'))
+        publisher_socket.send(json.dumps(payload_data))
         input("Press enter to add new message")
